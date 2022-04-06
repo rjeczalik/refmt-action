@@ -1,0 +1,58 @@
+name: refmt
+description: |
+  Action for reformatting files and values HCL ⇄ JSON ⇄ YAML ⇄ ENV.
+
+inputs:
+  input:
+    description: Structured value or document.
+    required:    true
+    type:        string
+  type:
+    description: Target encoding type.
+    required:    true
+    type:        string
+
+outputs:
+  output:
+    description: Reformatted input value.
+    value:       ${{ steps.refmt.outputs.output }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install fmt
+      env:
+        REFMT_URL: https://github.com/rjeczalik/refmt/releases/download/v1.5.0/refmt-linux-amd64
+      run: |
+        do_curl() {
+          curl --disable --fail --fail-early --location --connect-timeout 10 --show-error --silent $1
+        }
+
+        mkdir -p bin
+
+        do_curl "$REFMT_URL" > bin/refmt
+
+        chmod +x bin/refmt
+
+        echo "PATH=$(pwd)/bin:$PATH" >> $GITHUB_ENV
+      shell: bash
+    - name: Reformat
+      id:   refmt
+      run: |
+        tmp=$(mktemp)
+
+        cat <<EOF | refmt -t "${{ inputs.type }}" -c - $tmp
+        ${{ inputs.input }}
+        EOF
+
+        cat <<EOF
+        ::set-output name=output::$(cat $tmp)
+        EOF
+
+        rm -fv $tmp
+      shell: bash
+    - name: Cleanup
+      if: ${{ always() }}
+      run: |
+        rm -fv bin/refmt
+      shell: bash
