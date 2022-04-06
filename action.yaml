@@ -47,7 +47,7 @@ runs:
         echo "PATH=$(pwd)/bin:$PATH" >> $GITHUB_ENV
       shell: bash
     - name: Reformat
-      if:   ${{ inputs.type == "refmt" }}
+      if:   ${{ inputs.type == 'refmt' }}
       id:   refmt
       run: |
         output_file="${{ inputs.output_file }}"
@@ -61,9 +61,9 @@ runs:
         ::set-output name=output::$(cat "$output_file")
         EOF
       shell: bash
-    - name: Merge
-      if:   ${{ inputs.type == "merge" }}
-      id:   merge
+    - name:  Merge
+      if:    ${{ inputs.type == 'merge' }}
+      id:    merge
       run: |
         output_file="${{ inputs.output_file }}"
         [[ -z "$output_file" ]] && output_file=$(mktemp)
