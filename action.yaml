@@ -10,6 +10,9 @@ inputs:
   mixin:
     description: Structured value or document to be merged with the input.
     required:    true
+  prefix:
+    description: Preprends the provided string to every key-value pair.
+    required:    false
     type:        string
   output_file:
     description: Path to the file the output should be written to.
@@ -46,6 +49,7 @@ runs:
         chmod +x bin/refmt
         echo "PATH=$(pwd)/bin:$PATH" >> $GITHUB_ENV
       shell: bash
+
     - name: Reformat
       if:   ${{ inputs.type == 'refmt' }}
       id:   refmt
@@ -61,6 +65,7 @@ runs:
         ::set-output name=output::$(cat "$output_file")
         EOF
       shell: bash
+
     - name:  Merge
       if:    ${{ inputs.type == 'merge' }}
       id:    merge
@@ -80,6 +85,15 @@ runs:
         ::set-output name=output::$output_file
         EOF
       shell: bash
+
+    - name: Export envs
+      if:   ${{ inputs.type == 'env' }}
+      run: |
+        cat <<EOF | refmt -t env -p "${{ inputs.prefix }}" - - >> $GITHUB_ENV
+        ${{ inputs.input }}
+        EOF
+      shell: bash
+
     - name: Cleanup
       if: ${{ always() }}
       run: |
