@@ -25,8 +25,9 @@ inputs:
     default:     refmt
   encoding:
     description: Encoding of the output.
-    required:    true
+    required:    false
     type:        string
+    default:     yaml
 
 outputs:
   output:
