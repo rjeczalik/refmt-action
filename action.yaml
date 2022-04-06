@@ -7,15 +7,28 @@ inputs:
     description: Structured value or document.
     required:    true
     type:        string
+  mixin:
+    description: Structured value or document to be merged with the input.
+    required:    true
+    type:        string
+  output_file:
+    description: Path to the file the output should be written to.
+    required:    false
+    type:        string
   type:
-    description: Target encoding type.
+    description: Operation type.
+    required:    false
+    type:        string
+    default:     refmt
+  encoding:
+    description: Encoding of the output.
     required:    true
     type:        string
 
 outputs:
   output:
     description: Reformatted input value.
-    value:       ${{ steps.refmt.outputs.output }}
+    value:       ${{ steps.refmt.outputs.output || steps.merge.outputs.output }}
 
 runs:
   using: composite
@@ -29,27 +42,43 @@ runs:
         }
 
         mkdir -p bin
-
         do_curl "$REFMT_URL" > bin/refmt
-
         chmod +x bin/refmt
-
         echo "PATH=$(pwd)/bin:$PATH" >> $GITHUB_ENV
       shell: bash
     - name: Reformat
+      if:   ${{ inputs.type == "refmt" }}
       id:   refmt
       run: |
-        tmp=$(mktemp)
+        output_file="${{ inputs.output_file }}"
+        [[ -z "$output_file" ]] && output_file=$(mktemp)
 
-        cat <<EOF | refmt -t "${{ inputs.type }}" -c - $tmp
+        cat <<EOF | refmt -t "${{ inputs.encoding }}" -c - "$output_file"
         ${{ inputs.input }}
         EOF
 
         cat <<EOF
-        ::set-output name=output::$(cat $tmp)
+        ::set-output name=output::$(cat "$output_file")
+        EOF
+      shell: bash
+    - name: Merge
+      if:   ${{ inputs.type == "merge" }}
+      id:   merge
+      run: |
+        output_file="${{ inputs.output_file }}"
+        [[ -z "$output_file" ]] && output_file=$(mktemp)
+
+        cat >>"$output_file" <<EOF
+        ${{ inputs.input }}
         EOF
 
-        rm -fv $tmp
+        cat <<EOF | refmt -t yaml merge "$output_file" - "$output_file"
+        ${{ inputs.mixin }}
+        EOF
+
+        cat <<EOF
+        ::set-output name=output::$output_file
+        EOF
       shell: bash
     - name: Cleanup
       if: ${{ always() }}
