@@ -39,7 +39,7 @@ runs:
   steps:
     - name: Install fmt
       env:
-        REFMT_URL: https://github.com/rjeczalik/refmt/releases/download/v1.6/refmt-linux-amd64
+        REFMT_URL: https://github.com/rjeczalik/refmt/releases/download/v1.6.1/refmt-linux-amd64
       run: |
         do_curl() {
           curl --disable --fail --fail-early --location --connect-timeout 10 --show-error --silent $1
